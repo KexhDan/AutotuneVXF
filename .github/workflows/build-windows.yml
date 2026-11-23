@@ -1,0 +1,56 @@
+name: Build AutoVox Tune VST3 (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Disable plugin copy after build (CI)
+        shell: pwsh
+        run: |
+          $path = "CMakeLists.txt"
+          if (Test-Path $path) {
+            (Get-Content $path -Raw) -replace 'COPY_PLUGIN_AFTER_BUILD TRUE', 'COPY_PLUGIN_AFTER_BUILD FALSE' |
+              Set-Content $path -NoNewline
+          }
+
+      - name: Configure (CMake)
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build (Release)
+        run: cmake --build build --config Release --parallel
+
+      - name: Collect VST3 artifact
+        shell: pwsh
+        run: |
+          $dest = "artifact"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+
+          $vst3 = Get-ChildItem -Path "build" -Recurse -Directory -Filter "*.vst3"
+          if (-not $vst3) {
+            Write-Host "Build tree contents:"
+            Get-ChildItem -Path build -Recurse | Select-Object -First 200 FullName
+            throw "No se encontro ningun bundle .vst3 en build/"
+          }
+
+          foreach ($p in $vst3) {
+            Write-Host "Found: $($p.FullName)"
+            Copy-Item -Path $p.FullName -Destination $dest -Recurse -Force
+          }
+
+          Compress-Archive -Path "$dest\*" -DestinationPath "$dest\AutoVoxTune-Windows-VST3.zip" -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoVoxTune-Windows-VST3
+          path: artifact/
+          if-no-files-found: error

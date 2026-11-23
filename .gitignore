@@ -1,0 +1,6 @@
+build/
+build_*/
+artifact/
+*.zip
+.vs/
+.DS_Store
