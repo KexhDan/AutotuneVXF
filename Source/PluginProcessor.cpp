@@ -66,11 +66,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout AutoVoxTuneAudioProcessor::c
         juce::NormalisableRange<float> (430.0f, 450.0f, 0.1f), 440.0f,
         juce::AudioParameterFloatAttributes().withLabel ("Hz")));
 
-    // Transpose: -12 .. +12 cents, 0 en el centro = la escala no se desplaza.
+    // Transpose: -12 .. +12 semitonos, 0 en el centro = la escala no se desplaza.
     params.push_back (std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID { "transpose", 1 }, "Transpose",
-        juce::NormalisableRange<float> (-12.0f, 12.0f, 0.1f), 0.0f,
-        juce::AudioParameterFloatAttributes().withLabel ("ct")));
+        juce::NormalisableRange<float> (-12.0f, 12.0f, 1.0f), 0.0f,
+        juce::AudioParameterFloatAttributes().withLabel ("st")));
 
     // Formant: -12 .. +12 semitonos de desplazamiento de formantes, 0 = neutro.
     params.push_back (std::make_unique<juce::AudioParameterFloat> (
@@ -177,7 +177,7 @@ void AutoVoxTuneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const float wetMix   = juce::jlimit (0.0f, 1.0f,
                                          (mixParam ? mixParam->load() : 100.0f) / 100.0f);
     const float a4          = a4Param ? a4Param->load() : 440.0f;
-    const float transposeCt = transposeParam ? transposeParam->load() : 0.0f;
+    const float transposeSt = transposeParam ? transposeParam->load() : 0.0f;
     const float formantSt   = formantParam ? formantParam->load() : 0.0f;
 
     const int rootIdx  = rootParam  ? rootParam->getIndex()  : 0;
@@ -232,10 +232,9 @@ void AutoVoxTuneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 const int nearestSemitone = (int) std::floor (midi + 0.5);
                 const int snappedNote = Musical::snapToScale (midi, scaleMask);
 
-                // Transpose se suma DESPUES de la escala: con 0 ct la nota
+                // Transpose se suma DESPUES de la escala: con 0 st la nota
                 // objetivo es exactamente la que marca la escala elegida.
-                const double targetMidiValue =
-                    (double) snappedNote + (double) transposeCt / 100.0;
+                const double targetMidiValue = (double) snappedNote + (double) transposeSt;
                 const double targetFreq = Musical::midiToFrequency (targetMidiValue, a4);
 
                 // Cuantos centavos hay que desplazar la senal (positivo = subir).

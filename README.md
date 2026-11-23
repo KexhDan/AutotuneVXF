@@ -23,8 +23,9 @@ escala, velocidad de salto de nota y humanización del efecto.
 - **MEZCLA** (`Mix`): dry/wet. El seco se retrasa lo mismo que el húmedo para evitar
   comb-filtering.
 - **A4 (Hz):** referencia de afinación, de 430 a 450 Hz (440 por defecto).
-- **TRANSPOSE:** desplazamiento de **-12 a +12 cents**, con valor inicial **0** justo en el
-  centro. Se suma a la nota resultante de la escala: con **0 ct la escala no se modifica**.
+- **TRANSPOSE:** desplazamiento de **-12 a +12 semitonos** (una octava abajo/arriba), con
+  valor inicial **0** justo en el centro y pasos de 1 semitono. Se suma a la nota resultante
+  de la escala: con **0 st la escala no se modifica**.
 - **FORMANT:** desplazamiento de los formantes vocales de **-12 a +12 semitonos** (0 = neutro),
   para cambiar el carácter de la voz (más grave/amplia o más aguda/pequeña) sin tocar el pitch.
 - **Visualizador:** nota detectada, desviación en cents, nota objetivo, corrección
@@ -62,7 +63,7 @@ AutoVoxTune/
    **después** del suavizado de velocidad, de modo que el vibrato sigue audible incluso
    con `Velocidad` baja, y se funde suavemente al entrar/salir de la voz.
 6. **Transpose:** se añade a la nota objetivo **después** de la cuantización de escala
-   (`nota_escala + transpose_ct/100`). Con el valor inicial 0 ct, la escala actúa sola.
+   (`nota_escala + transpose_st`). Con el valor inicial 0 st, la escala actúa sola.
 7. **Formantes:** sobre la señal ya afinada se aplica un banco de filtros peaking que
    realza F1/F2/F3 en `base * 2^(formant/12)` y atenúa su posición original, más un
    estante agudo suave. Solo afecta al canal húmedo, así que `Mix` sigue siendo un
@@ -118,8 +119,8 @@ Después de copiarlo, reinicia tu DAW y haz un escaneo de plugins.
   Auto-Tune en modo automático). No corrige acordes.
 - Si notas "metallic/artefactos" con saltos grandes de nota, baja la velocidad: el
   desplazador en dominio del tiempo es más limpio para correcciones pequeñas.
-- `Transpose` es un ajuste muy fino (±12 cents = un cuarto de semitono); úsalo para
-  compensar desafinaciones pequeñas de la voz o del sample sin cambiar la escala.
+- `Transpose` desplaza la nota objetivo en semitonos enteros (una octava abajo/arriba).
+  Con 0 se respeta solo la escala; con +12 la misma nota suena una octava más alto.
 - `Formant` no cambia la nota: mueve el énfasis de los formantes. Valores negativos
   dan una voz más oscura/grande; positivos, más brillante/pequeña.
 

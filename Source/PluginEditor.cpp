@@ -79,7 +79,7 @@ AutoVoxTuneAudioProcessorEditor::AutoVoxTuneAudioProcessorEditor (AutoVoxTuneAud
     retuneHint.setText ("0 natural   >   100 robotico", juce::dontSendNotification);
     humanizeHint.setText ("0 exacto   >   100 vibrato", juce::dontSendNotification);
     formantHint.setText ("-12 grave   >   0   >   +12 agudo", juce::dontSendNotification);
-    transposeHint.setText ("-12 ct   >   0 = escala sin cambio", juce::dontSendNotification);
+    transposeHint.setText ("-12 st   >   0 = escala sin cambio   >   +12 st", juce::dontSendNotification);
     for (auto* hint : { &retuneHint, &humanizeHint, &formantHint, &transposeHint })
     {
         hint->setFont (juce::FontOptions (10.0f));
