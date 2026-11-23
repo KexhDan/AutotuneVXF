@@ -35,6 +35,7 @@ target_sources(AutoVoxTune
         Source/PluginEditor.cpp
         Source/PitchDetector.cpp
         Source/PitchShifter.cpp
+        Source/FormantFilter.cpp
         Source/MusicalScale.cpp
 )
 

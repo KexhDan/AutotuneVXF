@@ -18,7 +18,7 @@ namespace
 AutoVoxTuneAudioProcessorEditor::AutoVoxTuneAudioProcessorEditor (AutoVoxTuneAudioProcessor& p)
     : AudioProcessorEditor (&p), processor (p)
 {
-    setSize (780, 470);
+    setSize (780, 610);
 
     titleLabel.setText ("AUTOVOX TUNE", juce::dontSendNotification);
     titleLabel.setFont (juce::FontOptions (25.0f, juce::Font::bold));
@@ -73,10 +73,14 @@ AutoVoxTuneAudioProcessorEditor::AutoVoxTuneAudioProcessorEditor (AutoVoxTuneAud
     setupKnob (humanizeSlider, humanizeLabel, "HUMANIZACION");
     setupKnob (mixSlider,      mixLabel,      "MEZCLA");
     setupKnob (a4Slider,       a4Label,       "A4 (Hz)");
+    setupKnob (formantSlider,  formantLabel,  "FORMANT");
+    setupKnob (transposeSlider, transposeLabel, "TRANSPOSE");
 
     retuneHint.setText ("0 natural   >   100 robotico", juce::dontSendNotification);
     humanizeHint.setText ("0 exacto   >   100 vibrato", juce::dontSendNotification);
-    for (auto* hint : { &retuneHint, &humanizeHint })
+    formantHint.setText ("-12 grave   >   0   >   +12 agudo", juce::dontSendNotification);
+    transposeHint.setText ("-12 ct   >   0 = escala sin cambio", juce::dontSendNotification);
+    for (auto* hint : { &retuneHint, &humanizeHint, &formantHint, &transposeHint })
     {
         hint->setFont (juce::FontOptions (10.0f));
         hint->setColour (juce::Label::textColourId, kMuted);
@@ -127,6 +131,8 @@ AutoVoxTuneAudioProcessorEditor::AutoVoxTuneAudioProcessorEditor (AutoVoxTuneAud
     humanizeAtt = std::make_unique<SliderAttachment> (state, "humanize", humanizeSlider);
     mixAtt      = std::make_unique<SliderAttachment> (state, "mix",      mixSlider);
     a4Att       = std::make_unique<SliderAttachment> (state, "a4",       a4Slider);
+    formantAtt  = std::make_unique<SliderAttachment> (state, "formant",  formantSlider);
+    transposeAtt = std::make_unique<SliderAttachment> (state, "transpose", transposeSlider);
 
     startTimerHz (30);
 }
@@ -231,7 +237,7 @@ void AutoVoxTuneAudioProcessorEditor::paint (juce::Graphics& g)
     drawPitchMeter (g, meterBounds);
 
     g.setColour (kMuted);
-    g.drawFittedText ("Detector YIN  -  crossfade DSP  -  escala musical",
+    g.drawFittedText ("Detector YIN  -  crossfade DSP  -  escala + transpose + formant",
                       getLocalBounds().removeFromBottom (18),
                       juce::Justification::centred, 1);
 }
@@ -296,4 +302,11 @@ void AutoVoxTuneAudioProcessorEditor::resized()
     placeKnob (knobRow2.removeFromLeft (colWidth), mixLabel, mixSlider, nullptr);
     knobRow2.removeFromLeft (gap);
     placeKnob (knobRow2, a4Label, a4Slider, nullptr);
+
+    right.removeFromTop (6);
+
+    auto knobRow3 = right.removeFromTop (150);
+    placeKnob (knobRow3.removeFromLeft (colWidth), formantLabel, formantSlider, &formantHint);
+    knobRow3.removeFromLeft (gap);
+    placeKnob (knobRow3, transposeLabel, transposeSlider, &transposeHint);
 }

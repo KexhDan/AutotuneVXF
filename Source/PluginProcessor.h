@@ -7,6 +7,7 @@
 
 #include "PitchDetector.h"
 #include "PitchShifter.h"
+#include "FormantFilter.h"
 
 class AutoVoxTuneAudioProcessor : public juce::AudioProcessor
 {
@@ -56,8 +57,9 @@ private:
     static constexpr float kVibratoHz    = 5.0f;
 
     // DSP
-    PitchDetector detector;
-    PitchShifter  shifter;
+    PitchDetector  detector;
+    PitchShifter   shifter;
+    FormantShifter formant;
 
     std::vector<float> analysisRing;
     std::vector<float> analysisFrame;
@@ -82,10 +84,12 @@ private:
     float nextRandomSigned() noexcept;
 
     // Parametros (cacheados para el audio thread)
-    std::atomic<float>* retuneParam   = nullptr;
-    std::atomic<float>* humanizeParam = nullptr;
-    std::atomic<float>* mixParam      = nullptr;
-    std::atomic<float>* a4Param       = nullptr;
+    std::atomic<float>* retuneParam    = nullptr;
+    std::atomic<float>* humanizeParam  = nullptr;
+    std::atomic<float>* mixParam       = nullptr;
+    std::atomic<float>* a4Param        = nullptr;
+    std::atomic<float>* transposeParam = nullptr;
+    std::atomic<float>* formantParam   = nullptr;
     juce::AudioParameterChoice* rootParam  = nullptr;
     juce::AudioParameterChoice* scaleParam = nullptr;
 

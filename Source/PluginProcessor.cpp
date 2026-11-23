@@ -24,10 +24,12 @@ AutoVoxTuneAudioProcessor::AutoVoxTuneAudioProcessor()
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "PARAMS", createParameterLayout())
 {
-    retuneParam   = apvts.getRawParameterValue ("retune");
-    humanizeParam = apvts.getRawParameterValue ("humanize");
-    mixParam      = apvts.getRawParameterValue ("mix");
-    a4Param       = apvts.getRawParameterValue ("a4");
+    retuneParam    = apvts.getRawParameterValue ("retune");
+    humanizeParam  = apvts.getRawParameterValue ("humanize");
+    mixParam       = apvts.getRawParameterValue ("mix");
+    a4Param        = apvts.getRawParameterValue ("a4");
+    transposeParam = apvts.getRawParameterValue ("transpose");
+    formantParam   = apvts.getRawParameterValue ("formant");
     rootParam     = dynamic_cast<juce::AudioParameterChoice*> (apvts.getParameter ("root"));
     scaleParam    = dynamic_cast<juce::AudioParameterChoice*> (apvts.getParameter ("scale"));
 }
@@ -64,6 +66,18 @@ juce::AudioProcessorValueTreeState::ParameterLayout AutoVoxTuneAudioProcessor::c
         juce::NormalisableRange<float> (430.0f, 450.0f, 0.1f), 440.0f,
         juce::AudioParameterFloatAttributes().withLabel ("Hz")));
 
+    // Transpose: -12 .. +12 cents, 0 en el centro = la escala no se desplaza.
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "transpose", 1 }, "Transpose",
+        juce::NormalisableRange<float> (-12.0f, 12.0f, 0.1f), 0.0f,
+        juce::AudioParameterFloatAttributes().withLabel ("ct")));
+
+    // Formant: -12 .. +12 semitonos de desplazamiento de formantes, 0 = neutro.
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { "formant", 1 }, "Formant",
+        juce::NormalisableRange<float> (-12.0f, 12.0f, 0.1f), 0.0f,
+        juce::AudioParameterFloatAttributes().withLabel ("st")));
+
     return { params.begin(), params.end() };
 }
 
@@ -89,6 +103,7 @@ void AutoVoxTuneAudioProcessor::prepareToPlay (double sampleRate, int)
 
     detector.prepare (sampleRate);
     shifter.prepare (channels);
+    formant.prepare (sampleRate, channels);
 
     analysisRing.assign  ((size_t) PitchDetector::analysisLength, 0.0f);
     analysisFrame.assign ((size_t) PitchDetector::analysisLength, 0.0f);
@@ -161,7 +176,9 @@ void AutoVoxTuneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                          (humanizeParam ? humanizeParam->load() : 20.0f) / 100.0f);
     const float wetMix   = juce::jlimit (0.0f, 1.0f,
                                          (mixParam ? mixParam->load() : 100.0f) / 100.0f);
-    const float a4       = a4Param ? a4Param->load() : 440.0f;
+    const float a4          = a4Param ? a4Param->load() : 440.0f;
+    const float transposeCt = transposeParam ? transposeParam->load() : 0.0f;
+    const float formantSt   = formantParam ? formantParam->load() : 0.0f;
 
     const int rootIdx  = rootParam  ? rootParam->getIndex()  : 0;
     const int scaleIdx = scaleParam ? scaleParam->getIndex() : 0;
@@ -170,6 +187,10 @@ void AutoVoxTuneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     const float tauSeconds = retuneTimeConstant (retune);
     const float onePole = 1.0f - std::exp (-1.0f / (tauSeconds * (float) sampleRateHz));
     const float humanSmooth = 1.0f - std::exp (-1.0f / (0.005 * (float) sampleRateHz));
+
+    // Los coeficientes de formantes se actualizan una vez por bloque.
+    formant.setAmount (formantSt);
+    formant.advance (numSamples);
 
     float inputSamples[2]  = { 0.0f, 0.0f };
     float outputSamples[2] = { 0.0f, 0.0f };
@@ -211,7 +232,10 @@ void AutoVoxTuneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                 const int nearestSemitone = (int) std::floor (midi + 0.5);
                 const int snappedNote = Musical::snapToScale (midi, scaleMask);
 
-                const double targetMidiValue = (double) snappedNote;
+                // Transpose se suma DESPUES de la escala: con 0 ct la nota
+                // objetivo es exactamente la que marca la escala elegida.
+                const double targetMidiValue =
+                    (double) snappedNote + (double) transposeCt / 100.0;
                 const double targetFreq = Musical::midiToFrequency (targetMidiValue, a4);
 
                 // Cuantos centavos hay que desplazar la senal (positivo = subir).
@@ -254,8 +278,10 @@ void AutoVoxTuneAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         const float totalCents = smoothedCents + humanCents;
         const float ratio = std::pow (2.0f, totalCents / 1200.0f);
 
-        // 4) Desplazamiento de pitch + mezcla con el seco retardado.
+        // 4) Desplazamiento de pitch + formantes, solo sobre la senal humeda.
         shifter.processSample (inputSamples, outputSamples, numChannels, ratio);
+        for (int ch = 0; ch < numChannels; ++ch)
+            outputSamples[ch] = formant.processSample (outputSamples[ch], ch);
         correctionCents.store (totalCents);
 
         const int delayLength = (int) dryDelay[0].size();

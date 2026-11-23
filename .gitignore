@@ -4,3 +4,6 @@ artifact/
 *.zip
 .vs/
 .DS_Store
+
+Windows-VST3/
+

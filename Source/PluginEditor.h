@@ -23,11 +23,14 @@ private:
 
     juce::ComboBox rootBox, scaleBox;
     juce::Slider retuneSlider, humanizeSlider, mixSlider, a4Slider;
+    juce::Slider formantSlider, transposeSlider;
 
     juce::Label titleLabel, subtitleLabel;
     juce::Label rootLabel, scaleLabel;
     juce::Label retuneLabel, humanizeLabel, mixLabel, a4Label;
+    juce::Label formantLabel, transposeLabel;
     juce::Label retuneHint, humanizeHint;
+    juce::Label formantHint, transposeHint;
     juce::Label detectedCaption, detectedLabel, centsLabel;
     juce::Label targetLabel, correctionLabel, statusLabel;
 
@@ -36,6 +39,7 @@ private:
 
     std::unique_ptr<ComboAttachment> rootAtt, scaleAtt;
     std::unique_ptr<SliderAttachment> retuneAtt, humanizeAtt, mixAtt, a4Att;
+    std::unique_ptr<SliderAttachment> formantAtt, transposeAtt;
 
     juce::Rectangle<int> meterBounds;
     float displayedCents = 0.0f;
